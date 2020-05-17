@@ -39,11 +39,12 @@ services:
 
   datapusher:
     container_name: datapusher
-    image: clementmouchet/datapusher
-    # ports:
-    #   - "8800:8800"
+    image: datapusher:latest
     expose:
-        - "8800"
+      - "8800"
+    environment:
+      - CKAN_PUBLIC_DOMAIN=localhost
+      - CKAN_INTERNAL_DOMAIN=ckan
 
   db:
     container_name: db
@@ -58,6 +59,8 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - pg_data:/var/lib/postgresql/data
+    ports: 
+      - 5434:5432 
 
   solr:
     container_name: solr
