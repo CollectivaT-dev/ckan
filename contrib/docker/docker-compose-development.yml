@@ -5,7 +5,9 @@ version: "3"
 volumes:
   ckan_config:
   ckan_storage:
+  ckan_python_packages:
   pg_data:
+  solr_data:
 
 services:
   ckan:
@@ -34,8 +36,11 @@ services:
       - DS_RO_PASS=${DATASTORE_READONLY_PASSWORD}
 
     volumes:
+      # - ./production.ini:/etc/ckan/production.ini
       - ckan_config:/etc/ckan
       - ckan_storage:/var/lib/ckan
+      - ckan_python_packages:/usr/lib/ckan/venv/lib/python2.7/site-packages/ # needed to keep egg links to extensions in development
+      - ../../../ckan_extensions:/usr/lib/ckan/default/src/extensions
 
   datapusher:
     container_name: datapusher
@@ -67,6 +72,8 @@ services:
     build:
       context: ../../
       dockerfile: contrib/docker/solr/Dockerfile
+    volumes:
+      - solr_data:/opt/solr/server/solr/ckan
 
 
   redis:
