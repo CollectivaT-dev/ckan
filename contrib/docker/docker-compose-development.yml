@@ -16,6 +16,7 @@ services:
       context: ../../
       args:
           - CKAN_SITE_URL=${CKAN_SITE_URL}
+    # command: /usr/lib/ckan/venv/bin/gunicorn --paste /etc/ckan/production.ini
     links:
       - db
       - solr
@@ -36,10 +37,11 @@ services:
       - DS_RO_PASS=${DATASTORE_READONLY_PASSWORD}
 
     volumes:
-      # - ./production.ini:/etc/ckan/production.ini
+      # - ./development_nginx.ini:/etc/ckan/production.ini
+      # - ./development.ini:/etc/ckan/production.ini
       - ckan_config:/etc/ckan
       - ckan_storage:/var/lib/ckan
-      - ckan_python_packages:/usr/lib/ckan/venv/lib/python2.7/site-packages/ # needed to keep egg links to extensions in development
+      - ckan_python_packages:/usr/lib/ckan/venv/lib/python2.7/site-packages/ # needed to keep egg links to extensions in development. rm volume if rebuilding
       - ../../../ckan_extensions:/usr/lib/ckan/default/src/extensions
 
   datapusher:
@@ -75,7 +77,14 @@ services:
     volumes:
       - solr_data:/opt/solr/server/solr/ckan
 
-
   redis:
     container_name: redis
     image: redis:latest
+
+  # nginx:
+  #   container_name: nginx_ckan
+  #   build: ./nginx
+  #   ports:
+  #     - 80:80
+  #   links:
+  #     - ckan
