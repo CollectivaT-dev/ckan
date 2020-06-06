@@ -1,0 +1,93 @@
+# docker-compose build && docker-compose up -d
+# If "docker-compose logs ckan" shows DB not ready, run "docker-compose restart ckan" a few times.
+version: "3"
+
+volumes:
+  ckan_config:
+  ckan_storage:
+  ckan_python_packages:
+  pg_data:
+  solr_data:
+
+services:
+  ckan:
+    container_name: ckan
+    build:
+      context: ../../
+      args:
+          - CKAN_SITE_URL=${CKAN_SITE_URL}
+    command: /usr/lib/ckan/venv/bin/gunicorn --paste /etc/ckan/production.ini
+    links:
+      - db
+      - solr
+      - redis
+    ports:
+      - "0.0.0.0:${CKAN_PORT}:5000"
+    environment:
+      # Defaults work with linked containers, change to use own Postgres, SolR, Redis or Datapusher
+      - CKAN_SQLALCHEMY_URL=postgresql://ckan:${POSTGRES_PASSWORD}@db/ckan
+      - CKAN_DATASTORE_WRITE_URL=postgresql://ckan:${POSTGRES_PASSWORD}@db/datastore
+      - CKAN_DATASTORE_READ_URL=postgresql://datastore_ro:${DATASTORE_READONLY_PASSWORD}@db/datastore
+      - CKAN_SOLR_URL=http://solr:8983/solr/ckan
+      - CKAN_REDIS_URL=redis://redis:6379/1
+      - CKAN_DATAPUSHER_URL=http://datapusher:8800
+      - CKAN_SITE_URL=${CKAN_SITE_URL}
+      - CKAN_MAX_UPLOAD_SIZE_MB=${CKAN_MAX_UPLOAD_SIZE_MB}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - DS_RO_PASS=${DATASTORE_READONLY_PASSWORD}
+
+    volumes:
+      # - ./development_nginx.ini:/etc/ckan/production.ini
+      - ./production.ini:/etc/ckan/production.ini
+      - ckan_config:/etc/ckan
+      - ckan_storage:/var/lib/ckan
+      - ckan_python_packages:/usr/lib/ckan/venv/lib/python2.7/site-packages/ # needed to keep egg links to extensions in development. rm volume if rebuilding
+      - ../../../ckan_extensions:/usr/lib/ckan/default/src/extensions
+
+  datapusher:
+    container_name: datapusher
+    image: datapusher:latest
+    command: /usr/lib/ckan/datapusher/bin/gunicorn -b 0.0.0.0:8800 --workers 3 --capture-output deployment.datapusher_wsgi:application
+    expose:
+      - "8800"
+    environment:
+      - CKAN_PUBLIC_DOMAIN=localhost
+      - CKAN_INTERNAL_DOMAIN=ckan
+      - JOB_CONFIG=/usr/lib/ckan/datapusher/src/deployment/datapusher_settings.py
+      - PYTHONUNBUFFERED=TRUE
+
+  db:
+    container_name: db
+    build:
+      context: ../../
+      dockerfile: contrib/docker/postgresql/Dockerfile
+      args:
+        - DS_RO_PASS=${DATASTORE_READONLY_PASSWORD}
+        - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    environment:
+      - DS_RO_PASS=${DATASTORE_READONLY_PASSWORD}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports: 
+      - 5434:5432 
+
+  solr:
+    container_name: solr
+    build:
+      context: ../../
+      dockerfile: contrib/docker/solr/Dockerfile
+    volumes:
+      - solr_data:/opt/solr/server/solr/ckan
+
+  redis:
+    container_name: redis
+    image: redis:latest
+
+  # nginx:
+  #   container_name: nginx_ckan
+  #   build: ./nginx
+  #   ports:
+  #     - 80:80
+  #   links:
+  #     - ckan
