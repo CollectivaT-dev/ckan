@@ -57,3 +57,34 @@ If you want to test the gunicorn+Nginx configuration in development, you have to
 
 4) restart ckan and start nginx container. Now the platform should be accessible both at localhost:5000 and at localhost.
 
+# Installation instructions for production
+
+0) on a different folder of your machine clone https://github.com/CollectivaT-dev/datapusher and build datapusher image: "docker build -t datapusher ."
+
+1) cd contrib/docker
+
+2) "cp .env.template .env" and set env variables if necessary (note that CKAN_MAX_UPLOAD_SIZE_MB and CKAN_PUBLIC_DOMAIN are not present in the template file)
+
+3) cp development_nginx.example_ini production.ini
+
+4) docker-compose -f docker-compose-production.yml build
+
+5) "docker-compose -f docker-compose-production.yml up -d". The first time is better to run just the database and solr which need longer initialization.
+The ckan container will fail to connect until initialization is complete. So it has to be restarted it a few times.
+
+6) update values of beaker.session.secret and app_instance_uuid in production.ini. To get new values, you can use these commands (note that both a new value and the old one are returned by each command):
+
+docker-compose -f docker-compose-production.yml exec ckan ckan-paster make-config --no-interactive ckan /etc/ckan/production.ini | grep beaker.session.secret
+
+docker-compose -f docker-compose-production.yml exec ckan ckan-paster make-config --no-interactive ckan /etc/ckan/production.ini | grep app_instance_uuid 
+
+7) docker exec ckan /usr/local/bin/ckan-paster --plugin=ckan datastore set-permissions -c /etc/ckan/production.ini | docker exec -i db psql -U ckan
+
+8) docker-compose -f docker-compose-production.yml stop
+    docker-compose -f docker-compose-production.yml up -d 
+
+9) docker exec -it ckan /usr/local/bin/ckan-paster --plugin=ckan sysadmin -c /etc/ckan/production.ini add <name_admin_user>
+
+10) add ckan server block to local nginx container (see example configuration in nginx/nginx.conf). Then restart nginx and check platform is accessible from outside.
+
+11) access platform and try to upload a dataset. Check that datapusher works as well.
