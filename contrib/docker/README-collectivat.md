@@ -1,6 +1,6 @@
 # Installation instructions for local development
 
-0) on a different folder of your machine clone https://github.com/CollectivaT-dev/datapusher and build datapusher image: "docker build -t datapusher ."
+0) on a different folder of your machine clone https://github.com/CollectivaT-dev/datapusher, checkout branch master_collectivat (git checkout master_collectivat) and build datapusher image (docker build -t datapusher .)
 
 1) cd contrib/docker
 
@@ -59,7 +59,7 @@ If you want to test the gunicorn+Nginx configuration in development, you have to
 
 # Installation instructions for production
 
-0) on a different folder of your machine clone https://github.com/CollectivaT-dev/datapusher and build datapusher image: "docker build -t datapusher ."
+0) on a different folder of your machine clone https://github.com/CollectivaT-dev/datapusher, checkout branch master_collectivat (git checkout master_collectivat) and build datapusher image (docker build -t datapusher .)
 
 1) cd contrib/docker
 
@@ -88,3 +88,31 @@ docker-compose -f docker-compose-production.yml exec ckan ckan-paster make-confi
 10) add ckan server block to local nginx container (see example configuration in nginx/nginx.conf). Then restart nginx and check platform is accessible from outside.
 
 11) access platform and try to upload a dataset. Check that datapusher works as well.
+
+# Data import / export
+
+Datasets, users, groups and organizations can be exported to/import from a json or zip file using the python package ckanapi. To do this from within the ckan container, follow these steps:
+
+1) docker-compose exec ckan bash
+
+2) cd /usr/lib/ckan/venv  (you have to be in a directory where user ckan has write permissions)
+
+3) source bin/activate
+
+4) pip install ckanapi (if not installed yet)
+
+5) To export use:
+
+   ckanapi dump datasets --all -O datasets.jsonl.gz -z -p 4 -c /etc/ckan/production.ini 
+   ckanapi dump users --all -O users.jsonl.gz -z -p 4 -c /etc/ckan/production.ini 
+   ckanapi dump organizations --all -O organizations.jsonl.gz -z -p 4 -c /etc/ckan/production.ini 
+
+To import use, e.g:
+
+   ckanapi load datasets -I datasets.jsonl.gz -z -p 3 -c /etc/ckan/production.ini
+
+If you want to export data from another ckan server, use e.g.:
+
+    ckanapi dump datasets --all -O datasets.jsonl.gz -z -p 4 -r https://dadess.cat/
+
+NOTE: before loading datasets, remember to load the organizations to which they belong. Also, resource files should be already in the resources directory.
