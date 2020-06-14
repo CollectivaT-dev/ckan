@@ -109,10 +109,14 @@ Datasets, users, groups and organizations can be exported to/import from a json 
 
 To import use, e.g:
 
-   ckanapi load datasets -I datasets.jsonl.gz -z -p 3 -c /etc/ckan/production.ini
+   ckanapi load datasets -I datasets.jsonl.gz -z -p 3 -c /etc/ckan/production.ini --upload-resources
 
 If you want to export data from another ckan server, use e.g.:
 
     ckanapi dump datasets --all -O datasets.jsonl.gz -z -p 4 -r https://dadess.cat/
 
-NOTE: before loading datasets, remember to load the organizations to which they belong. Also, resource files should be already in the resources directory.
+NOTE: before loading datasets, remember to load the organizations to which they belong.
+
+# Rebuild Solr index
+
+docker exec -it ckan /usr/local/bin/ckan-paster --plugin=ckan search-index rebuild -c /etc/ckan/production.ini
