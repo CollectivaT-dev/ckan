@@ -120,3 +120,13 @@ NOTE: before loading datasets, remember to load the organizations to which they 
 # Rebuild Solr index
 
 docker exec -it ckan /usr/local/bin/ckan-paster --plugin=ckan search-index rebuild -c /etc/ckan/production.ini
+
+# Change the configuration
+
+In the path which the `docker-compose.yml` and `production.ini` is modify the production.ini file and then restart the docker-compose as explained in [here](https://docs.ckan.org/en/2.8/maintaining/installing/install-from-docker-compose.html)
+
+```
+docker-compose restart ckan
+```
+
+To add the plugins _installed_ to the platform, it needs to be added to the `production.ini`. In the case of `recline_graph_view`, the info needs to be added to both the `ckan.plugins` and `ckan.views.default_views` lines.
