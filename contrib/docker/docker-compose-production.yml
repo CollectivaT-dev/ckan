@@ -3,14 +3,14 @@
 version: "3"
 
 volumes:
-  ckan_config:
-  ckan_storage:
-  pg_data:
-  solr_data:
+  collectivat_ckan_config:
+  collectivat_ckan_storage:
+  collectivat_pg_data:
+  collectivat_solr_data:
 
 services:
   ckan:
-    container_name: ckan
+    container_name: collectivat_ckan
     build:
       dockerfile: Dockerfile_production
       context: ../../
@@ -28,12 +28,12 @@ services:
     #   - "0.0.0.0:${CKAN_PORT}:5000"
     environment:
       # Defaults work with linked containers, change to use own Postgres, SolR, Redis or Datapusher
-      - CKAN_SQLALCHEMY_URL=postgresql://ckan:${POSTGRES_PASSWORD}@db/ckan
-      - CKAN_DATASTORE_WRITE_URL=postgresql://ckan:${POSTGRES_PASSWORD}@db/datastore
-      - CKAN_DATASTORE_READ_URL=postgresql://datastore_ro:${DATASTORE_READONLY_PASSWORD}@db/datastore
-      - CKAN_SOLR_URL=http://solr:8983/solr/ckan
-      - CKAN_REDIS_URL=redis://redis:6379/1
-      - CKAN_DATAPUSHER_URL=http://datapusher:8800
+      - CKAN_SQLALCHEMY_URL=postgresql://ckan:${POSTGRES_PASSWORD}@collectivat_db/ckan
+      - CKAN_DATASTORE_WRITE_URL=postgresql://ckan:${POSTGRES_PASSWORD}@collectivat_db/datastore
+      - CKAN_DATASTORE_READ_URL=postgresql://datastore_ro:${DATASTORE_READONLY_PASSWORD}@collectivat_db/datastore
+      - CKAN_SOLR_URL=http://collectivat_solr:8983/solr/ckan
+      - CKAN_REDIS_URL=redis://collectivat_redis:6379/1
+      - CKAN_DATAPUSHER_URL=http://collectivat_datapusher:8800
       - CKAN_SITE_URL=${CKAN_SITE_URL}
       - CKAN_MAX_UPLOAD_SIZE_MB=${CKAN_MAX_UPLOAD_SIZE_MB}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -41,11 +41,13 @@ services:
 
     volumes:
       # - ./production.ini:/etc/ckan/production.ini
-      - ckan_config:/etc/ckan
-      - ckan_storage:/var/lib/ckan
+      - collectivat_ckan_config:/etc/ckan
+      - collectivat_ckan_storage:/var/lib/ckan
+    networks:
+      - collectivat_ckan_default
 
   datapusher:
-    container_name: datapusher
+    container_name: collectivat_datapusher
     image: datapusher:latest
     command: /usr/lib/ckan/datapusher/bin/gunicorn -b 0.0.0.0:8800 --workers 3 --capture-output deployment.datapusher_wsgi:application
     restart: always
@@ -53,12 +55,14 @@ services:
       - "8800"
     environment:
       - CKAN_PUBLIC_DOMAIN=${CKAN_PUBLIC_DOMAIN}
-      - CKAN_INTERNAL_DOMAIN=ckan:5000
+      - CKAN_INTERNAL_DOMAIN=collectivat_ckan:5000
       - JOB_CONFIG=/usr/lib/ckan/datapusher/src/deployment/datapusher_settings.py
       - PYTHONUNBUFFERED=TRUE
+    networks:
+      - collectivat_ckan_default
 
   db:
-    container_name: db
+    container_name: collectivat_db
     build:
       context: ../../
       dockerfile: contrib/docker/postgresql/Dockerfile
@@ -70,25 +74,31 @@ services:
       - DS_RO_PASS=${DATASTORE_READONLY_PASSWORD}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - collectivat_pg_data:/var/lib/postgresql/data
     expose:
       - "5432"
+    networks:
+      - collectivat_ckan_default
     # ports: 
     #   - 5434:5432 
 
   solr:
-    container_name: solr
+    container_name: collectivat_solr
     build:
       context: ../../
       dockerfile: contrib/docker/solr/Dockerfile
     restart: always
     volumes:
-      - solr_data:/opt/solr/server/solr/ckan
+      - collectivat_solr_data:/opt/solr/server/solr/ckan
+    networks:
+      - collectivat_ckan_default
 
   redis:
-    container_name: redis
+    container_name: collectivat_redis
     image: redis:latest
     restart: always
+    networks:
+      - collectivat_ckan_default
 
   # nginx:
   #   container_name: nginx_ckan
@@ -97,3 +107,8 @@ services:
   #     - 80:80
   #   links:
   #     - ckan
+  #   networks:
+  #     - collectivat_ckan_default
+
+networks:
+  collectivat_ckan_default:
