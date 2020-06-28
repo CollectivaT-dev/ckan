@@ -63,14 +63,13 @@ If you want to test the gunicorn+Nginx configuration in development, you have to
 
 1) cd contrib/docker
 
-2) "cp .env.template .env" and set env variables if necessary (note that CKAN_MAX_UPLOAD_SIZE_MB and CKAN_PUBLIC_DOMAIN are not present in the template file)
+2) "cp .env.template .env" and set env variables if necessary (note that CKAN_MAX_UPLOAD_SIZE_MB and CKAN_PUBLIC_DOMAIN are not present in the template file). Note that CKAN_PORT has to be available on the host machine.
 
-3) cp development_nginx.example_ini production.ini
+3) docker-compose -f docker-compose-production.yml build
 
-4) docker-compose -f docker-compose-production.yml build
+4) docker-compose -f docker-compose-production.yml up -d 
 
-5) "docker-compose -f docker-compose-production.yml up -d". The first time is better to run just the database and solr which need longer initialization.
-The ckan container will fail to connect until initialization is complete. So it has to be restarted it a few times.
+5) cp development_nginx.example_ini production.ini
 
 6) update values of beaker.session.secret and app_instance_uuid in production.ini. To get new values, you can use these commands (note that both a new value and the old one are returned by each command):
 
@@ -78,16 +77,24 @@ docker-compose -f docker-compose-production.yml exec ckan ckan-paster make-confi
 
 docker-compose -f docker-compose-production.yml exec ckan ckan-paster make-config --no-interactive ckan /etc/ckan/production.ini | grep app_instance_uuid 
 
-7) docker exec ckan /usr/local/bin/ckan-paster --plugin=ckan datastore set-permissions -c /etc/ckan/production.ini | docker exec -i db psql -U ckan
+7) copy production.ini inside ckan container and restart it:
 
-8) docker-compose -f docker-compose-production.yml stop
+docker cp production.ini collectivat_ckan:/etc/ckan/production.ini
+
+docker-compose -f docker-compose-production.yml restart ckan
+
+8) docker exec collectivat_ckan /usr/local/bin/ckan-paster --plugin=ckan datastore set-permissions -c /etc/ckan/production.ini | docker exec -i collectivat_db psql -U ckan
+
+9) docker-compose -f docker-compose-production.yml stop
     docker-compose -f docker-compose-production.yml up -d 
 
-9) docker exec -it ckan /usr/local/bin/ckan-paster --plugin=ckan sysadmin -c /etc/ckan/production.ini add <name_admin_user>
+10) create a new admin:
 
-10) add ckan server block to local nginx container (see example configuration in nginx/nginx.conf). Then restart nginx and check platform is accessible from outside.
+docker exec -it collectivat_ckan /usr/local/bin/ckan-paster --plugin=ckan sysadmin -c /etc/ckan/production.ini add <name_admin_user>
 
-11) access platform and try to upload a dataset. Check that datapusher works as well.
+11) add ckan server block to local nginx container (see example configuration in nginx/nginx.conf). Then restart nginx and check platform is accessible from outside.
+
+12) access platform and try to upload a dataset. Check that datapusher works as well.
 
 # Data import / export
 
