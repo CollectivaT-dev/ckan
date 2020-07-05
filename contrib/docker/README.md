@@ -130,10 +130,14 @@ docker exec -it ckan /usr/local/bin/ckan-paster --plugin=ckan search-index rebui
 
 # Change the configuration
 
-In the path which the `docker-compose.yml` and `production.ini` is modify the production.ini file and then restart the docker-compose as explained in [here](https://docs.ckan.org/en/2.8/maintaining/installing/install-from-docker-compose.html)
+Modify /etc/ckan/production.ini file inside the ckan container and then restart the docker-compose as explained in [here](https://docs.ckan.org/en/2.8/maintaining/installing/install-from-docker-compose.html)
 
 ```
 docker-compose restart ckan
 ```
 
 To add the plugins _installed_ to the platform, it needs to be added to the `production.ini`. In the case of `recline_graph_view`, the info needs to be added to both the `ckan.plugins` and `ckan.views.default_views` lines.
+
+# Set custom favicon
+
+In the folder public/images of the ckanext_collectivat_theme repository add the new favicon file. Then change ckan.favicon settings to the new file path (do not include "public"). In development, just restart the ckan container. In production, rebuild the ckan container using the --no-cache option and restart.
