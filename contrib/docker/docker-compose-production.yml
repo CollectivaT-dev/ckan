@@ -9,8 +9,9 @@ volumes:
   collectivat_solr_data:
 
 services:
-  ckan:
+  collectivat_ckan:
     container_name: collectivat_ckan
+    image: collectivat_ckan
     build:
       dockerfile: Dockerfile_production
       context: ../../
@@ -19,9 +20,9 @@ services:
     command: /usr/lib/ckan/venv/bin/gunicorn --paste /etc/ckan/production.ini
     restart: always
     links:
-      - db
-      - solr
-      - redis
+      - collectivat_db
+      - collectivat_solr
+      - collectivat_redis
     expose:
       - "5000"
     ports:
@@ -46,9 +47,9 @@ services:
     networks:
       - collectivat_ckan_default
 
-  datapusher:
+  collectivat_datapusher:
     container_name: collectivat_datapusher
-    image: datapusher:latest
+    image: collectivat_datapusher:latest
     command: /usr/lib/ckan/datapusher/bin/gunicorn -b 0.0.0.0:8800 --workers 3 --capture-output deployment.datapusher_wsgi:application
     restart: always
     expose:
@@ -61,8 +62,9 @@ services:
     networks:
       - collectivat_ckan_default
 
-  db:
+  collectivat_db:
     container_name: collectivat_db
+    image: collectivat_db
     build:
       context: ../../
       dockerfile: contrib/docker/postgresql/Dockerfile
@@ -82,8 +84,9 @@ services:
     # ports: 
     #   - 5434:5432 
 
-  solr:
+  collectivat_solr:
     container_name: collectivat_solr
+    image: collectivat_solr
     build:
       context: ../../
       dockerfile: contrib/docker/solr/Dockerfile
@@ -93,7 +96,7 @@ services:
     networks:
       - collectivat_ckan_default
 
-  redis:
+  collectivat_redis:
     container_name: collectivat_redis
     image: redis:latest
     restart: always

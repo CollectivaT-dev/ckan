@@ -59,7 +59,7 @@ If you want to test the gunicorn+Nginx configuration in development, you have to
 
 # Installation instructions for production
 
-0) on a different folder of your machine clone https://github.com/CollectivaT-dev/datapusher, checkout branch master_collectivat (git checkout master_collectivat) and build datapusher image (docker build -t datapusher .)
+0) on a different folder of your machine clone https://github.com/CollectivaT-dev/datapusher, checkout branch master_collectivat (git checkout master_collectivat) and build datapusher image (docker build -t collectivat_datapusher .)
 
 1) cd contrib/docker
 
